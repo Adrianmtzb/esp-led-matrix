@@ -1,0 +1,20 @@
+{
+  "name": "ledmatrix-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that drives the LED Matrix boards over their HTTP API",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "ledmatrix-mcp": "server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.5"
+  }
+}

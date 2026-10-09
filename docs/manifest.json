@@ -1,0 +1,25 @@
+{
+  "name": "LED Matrix",
+  "version": "0.1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C6",
+      "parts": [
+        { "path": "bootloader-c6.bin", "offset": 0 },
+        { "path": "partitions-c6.bin", "offset": 32768 },
+        { "path": "boot_app0-c6.bin", "offset": 57344 },
+        { "path": "ledmatrix-c6.bin", "offset": 65536 }
+      ]
+    },
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "bootloader-s3.bin", "offset": 0 },
+        { "path": "partitions-s3.bin", "offset": 32768 },
+        { "path": "boot_app0-s3.bin", "offset": 57344 },
+        { "path": "ledmatrix-s3.bin", "offset": 65536 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LED Matrix</title>
+<style>
+:root{--bg:#0a0c10;--panel:#12151c;--panel2:#181c25;--line:#262b36;--text:#e9eaf0;--dim:#8b90a0;--accent:#ff5a1f;--accent2:#ffb020;--ok:#3ddc84;--err:#ff4d5e;--r:12px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 16px;max-width:980px;margin:auto}
+header h1{font-size:18px;margin:0;letter-spacing:.3px}
+header .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:none}
+header .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+header .host{color:var(--dim);font-size:13px;margin-left:auto;text-align:right}
+main{max-width:980px;margin:auto;padding:0 16px 40px}
+.preview{background:#000;border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;justify-content:center}
+.preview canvas{max-width:100%;image-rendering:pixelated}
+.status{color:var(--dim);font-size:13px;margin:8px 2px 14px;display:flex;gap:14px;flex-wrap:wrap}
+.status b{color:var(--text);font-weight:600}
+nav{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:4px;margin-bottom:14px;overflow-x:auto}
+nav button{flex:1;min-width:76px;background:none;border:0;color:var(--dim);padding:9px 10px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer}
+nav button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+section{display:none;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+section.on{display:block}
+h3{margin:18px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim)}
+h3:first-child{margin-top:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.row>label,.field{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--dim);flex:1;min-width:120px}
+input[type=text],input[type=number],input[type=password],select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;font:inherit;width:100%}
+textarea{resize:vertical;min-height:64px}
+input[type=color]{width:100%;height:40px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:3px;cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{flex-direction:row!important;align-items:center;gap:8px!important;color:var(--text)!important;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#3a4150}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.danger{color:var(--err)}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px}
+.seg button{flex:1;background:none;border:0;color:var(--dim);padding:7px 8px;border-radius:7px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.fx{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+.fx button{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font:inherit;cursor:pointer}
+.fx button b{display:block;text-transform:capitalize}
+.fx button span{font-size:12px;color:var(--dim)}
+.fx button.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatches button{width:28px;height:28px;border-radius:7px;border:2px solid var(--line);cursor:pointer;padding:0}
+.swatches button.on{border-color:#fff}
+.editor-wrap{background:#000;border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;justify-content:center;touch-action:none;margin-bottom:12px}
+.editor-wrap canvas{max-width:100%;cursor:crosshair}
+.frames{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;margin-bottom:8px}
+.frames canvas{border:2px solid var(--line);border-radius:6px;cursor:pointer;flex:none;background:#000}
+.frames canvas.on{border-color:var(--accent)}
+.tilt{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#1d2330,#10131a);border:1px solid var(--line);position:relative;touch-action:none;cursor:grab;flex:none}
+.tilt i{position:absolute;width:22px;height:22px;border-radius:50%;background:var(--accent);left:64px;top:64px;box-shadow:0 0 12px var(--accent);pointer-events:none}
+.liquid-box{display:none;gap:16px;align-items:center;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+.liquid-box.on{display:flex}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 4px;border-bottom:1px solid var(--line)}
+td:first-child{color:var(--dim);width:40%}
+.hint{color:var(--dim);font-size:13px;margin:6px 0}
+code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12.5px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;z-index:9}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#toast.err{border-color:var(--err);color:#ffc2c8}
+@media (max-width:560px){.row>label,.field{min-width:calc(50% - 6px)}header .host{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>LED Matrix</h1>
+  <span class="host" id="hostLabel">connecting...</span>
+</header>
+<main>
+  <div class="preview"><canvas id="preview" width="320" height="160"></canvas></div>
+  <div class="status" id="status"></div>
+
+  <nav id="tabs">
+    <button data-tab="text" class="on">Text</button>
+    <button data-tab="effects">Effects</button>
+    <button data-tab="draw">Draw</button>
+    <button data-tab="display">Display</button>
+    <button data-tab="device">Device</button>
+  </nav>
+
+  <!-- TEXT -->
+  <section id="tab-text" class="on">
+    <h3>Message</h3>
+    <div class="row"><label style="flex-basis:100%">Text <textarea id="tText" maxlength="240" placeholder="Hello world!">LED Matrix</textarea></label></div>
+    <div class="row">
+      <label>Color <input type="color" id="tColor" value="#ffffff"></label>
+      <label>Background <input type="color" id="tBg" value="#000000"></label>
+      <label>Scroll <select id="tScroll"><option value="auto">Auto</option><option value="scroll">Always</option><option value="static">Static</option></select></label>
+      <label>Size <select id="tSize"><option value="0">Auto</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+    </div>
+    <div class="row">
+      <label>Speed <span id="tSpeedV">20 px/s</span><input type="range" id="tSpeed" min="2" max="120" value="20"></label>
+      <label class="check"><input type="checkbox" id="tRainbow"> Rainbow</label>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="tShow">Show text</button>
+      <button class="btn" id="tNotify">Notify once</button>
+    </div>
+  </section>
+
+  <!-- EFFECTS -->
+  <section id="tab-effects">
+    <h3>Effect</h3>
+    <div class="fx" id="fxList"></div>
+    <div class="row">
+      <label>Speed <span id="eSpeedV">5</span><input type="range" id="eSpeed" min="1" max="10" value="5"></label>
+      <label>Color <input type="color" id="eColor" value="#0070ff"></label>
+      <label class="check"><input type="checkbox" id="eUseColor"> Custom color</label>
+    </div>
+    <div class="liquid-box" id="liquidBox">
+      <div class="tilt" id="tilt" title="Drag to tilt; double-click to hand control back to the IMU"><i></i></div>
+      <div style="flex:1;min-width:180px">
+        <label class="field">Fill level <span id="eLevelV">50%</span><input type="range" id="eLevel" min="5" max="95" value="50"></label>
+        <div class="row" style="margin-top:10px">
+          <button class="btn primary" id="shake">Shake!</button>
+          <button class="btn" id="tiltReset">Release tilt</button>
+        </div>
+        <p class="hint" id="imuHint"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DRAW -->
+  <section id="tab-draw">
+    <div class="row" style="align-items:center">
+      <div class="seg" id="tools" style="flex:2;min-width:240px">
+        <button data-tool="pen" class="on">Pen</button><button data-tool="erase">Eraser</button><button data-tool="fill">Fill</button><button data-tool="pick">Picker</button>
+      </div>
+      <div class="field" style="flex:0 0 70px;min-width:70px"><input type="color" id="dColor" value="#ff3b30"></div>
+    </div>
+    <div class="swatches" id="swatches" style="margin-bottom:12px"></div>
+    <div class="editor-wrap"><canvas id="editor"></canvas></div>
+    <div class="frames" id="frames"></div>
+    <div class="row">
+      <button class="btn small" id="fAdd">+ Frame</button>
+      <button class="btn small" id="fDel">Delete frame</button>
+      <button class="btn small" id="fPlay">Play preview</button>
+      <button class="btn small" id="dClear">Clear</button>
+      <button class="btn small" id="dGrab">Grab screen</button>
+      <label class="btn small" style="display:inline-block">Import image/GIF<input type="file" id="dFile" accept="image/*" hidden></label>
+    </div>
+    <div class="row">
+      <label>FPS <span id="fFpsV">8</span><input type="range" id="fFps" min="1" max="30" value="8"></label>
+      <label class="check"><input type="checkbox" id="dLive"> Live drawing</label>
+      <button class="btn primary" id="dSend">Send to matrix</button>
+    </div>
+    <p class="hint">One frame is sent as a static image; several frames play as an animation. Live drawing paints pixels on the matrix as you draw.</p>
+  </section>
+
+  <!-- DISPLAY -->
+  <section id="tab-display">
+    <h3>Matrix</h3>
+    <div class="row">
+      <label class="check" style="flex:0 0 auto"><input type="checkbox" id="cFit"> Fit to screen</label>
+      <label>LED size <span id="cPitchV"></span><input type="range" id="cPitch" min="4" max="40"></label>
+    </div>
+    <div class="row">
+      <label>Width <input type="number" id="cW" min="4" max="64"></label>
+      <label>Height <input type="number" id="cH" min="4" max="64"></label>
+      <label>Preset <select id="cPreset"><option value="">Custom</option><option>8x8</option><option>16x16</option><option>32x8</option><option>32x16</option><option>32x32</option><option>64x32</option><option>64x64</option></select></label>
+    </div>
+    <h3>LEDs</h3>
+    <div class="row"><div class="field">Color mode<div class="seg" id="cMode"><button data-v="rgb">RGB</button><button data-v="mono">Mono</button><button data-v="gray">Mono + dimming</button></div></div></div>
+    <div class="row" id="monoRow">
+      <label>Mono color <input type="color" id="cMono"></label>
+      <div class="field" style="flex:2">Presets<div class="swatches" id="monoSwatches"></div></div>
+    </div>
+    <div class="row"><div class="field">Shape<div class="seg" id="cShape"><button data-v="round">Round</button><button data-v="rounded">Rounded</button><button data-v="square">Square</button></div></div></div>
+    <div class="row">
+      <label>Gap <span id="cGapV"></span><input type="range" id="cGap" min="0" max="60"></label>
+      <label>Brightness <span id="cBriV"></span><input type="range" id="cBri" min="1" max="255"></label>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="cOff"> Show unlit LEDs</label>
+    </div>
+    <h3>Screen</h3>
+    <div class="row">
+      <label>Backlight <span id="cBlV"></span><input type="range" id="cBl" min="5" max="255"></label>
+      <label>Rotation <select id="cRot"><option value="0">0°</option><option value="1">90°</option><option value="2">180°</option><option value="3">270°</option></select></label>
+    </div>
+    <p class="hint">Fit to screen picks the matrix size from the LED size so it covers the whole display; typing a width or height turns it off. Changing the rotation reboots the board.</p>
+  </section>
+
+  <!-- DEVICE -->
+  <section id="tab-device">
+    <h3>Info</h3>
+    <table id="info"></table>
+    <h3>Settings</h3>
+    <div class="row">
+      <label>Hostname <input type="text" id="sHost" maxlength="24"></label>
+      <label>Time zone <select id="sTzCity"></select></label>
+      <label>POSIX TZ <input type="text" id="sTz"></label>
+    </div>
+    <div class="row"><button class="btn primary" id="sSave">Save settings</button></div>
+    <h3>WiFi</h3>
+    <div class="row">
+      <label>Network <input type="text" id="wSsid" maxlength="32"></label>
+      <label>Password <input type="password" id="wPass" maxlength="64" autocomplete="new-password"></label>
+    </div>
+    <div class="row"><button class="btn" id="wSave">Save WiFi and reboot</button><button class="btn danger" id="reboot">Reboot</button></div>
+    <h3>MCP</h3>
+    <p class="hint">Control this matrix from Claude or any MCP client: run <code>node mcp/server.mjs</code> from the repo with <code>LEDMATRIX_HOSTS=<span id="mcpHost"></span></code>.</p>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const BASE = qs.get('host') ? 'http://' + qs.get('host') : '';
+let state = null, info = null, effects = [];
+
+// ---------------------------------------------------------------- api & ui helpers
+async function api(path, body) {
+  const opt = body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)};
+  const r = await fetch(BASE + path, opt);
+  let j = {};
+  try { j = await r.json(); } catch (e) {}
+  if (!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+let toastTimer;
+function toast(msg, err) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.className = ''), 2600);
+}
+async function act(path, body, okMsg) {
+  try {
+    const j = await api(path, body);
+    if (okMsg) toast(okMsg);
+    if (j.scene && state) state.scene = j.scene;
+    if (j.display && state) { state.display = j.display; syncDisplay(); }
+    renderStatus();
+    return j;
+  } catch (e) { toast(e.message, true); }
+}
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function seg(id, value, onPick) {
+  const el = $(id);
+  el.querySelectorAll('button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.v === value);
+    if (onPick) b.onclick = () => { seg(id, b.dataset.v); onPick(b.dataset.v); };
+  });
+}
+const hex2rgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const rgb2hex = (r, g, b) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+function b64encode(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function b64decode(str) {
+  const s = atob(str), out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+
+// ---------------------------------------------------------------- tabs
+document.querySelectorAll('#tabs button').forEach((b) => (b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section').forEach((s) => s.classList.toggle('on', s.id === 'tab-' + b.dataset.tab));
+  if (b.dataset.tab === 'device') loadInfo();
+  if (b.dataset.tab === 'draw') drawEditor();
+  try { localStorage.setItem('lm-tab', b.dataset.tab); } catch (e) {}
+}));
+try { const t = localStorage.getItem('lm-tab'); if (t) document.querySelector(`#tabs [data-tab="${t}"]`)?.click(); } catch (e) {}
+
+// ---------------------------------------------------------------- LED drawing (preview + editor)
+function drawLeds(cv, w, h, rgb, opts) {
+  const maxW = cv.parentElement.clientWidth - 28;
+  const pitch = Math.max(2, Math.min(Math.floor(maxW / w), Math.floor((opts.maxH || 360) / h)));
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.width = w * pitch + 'px';
+  cv.style.height = h * pitch + 'px';
+  cv.width = w * pitch * dpr;
+  cv.height = h * pitch * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w * pitch, h * pitch);
+  const gap = pitch >= 4 ? Math.max(opts.gap > 0 ? 1 : 0, Math.round(pitch * opts.gap / 100)) : 0;
+  const s = pitch - gap, off = gap / 2;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 3;
+    const lit = rgb[i] | rgb[i + 1] | rgb[i + 2];
+    ctx.fillStyle = lit ? `rgb(${rgb[i]},${rgb[i + 1]},${rgb[i + 2]})` : opts.off;
+    const px = x * pitch + off, py = y * pitch + off;
+    ctx.beginPath();
+    if (opts.shape === 'square' || s < 3) ctx.rect(px, py, s, s);
+    else ctx.roundRect(px, py, s, s, opts.shape === 'rounded' ? s / 4 : s / 2);
+    ctx.fill();
+    if (lit && opts.glow) {
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath();
+      ctx.arc(px + s / 2, py + s / 2, s * 0.85, 0, 7);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  return pitch;
+}
+
+let previewBusy = false;
+async function pollFrame() {
+  if (previewBusy || document.hidden) return;
+  previewBusy = true;
+  try {
+    const f = await api('/api/frame');
+    drawLeds($('preview'), f.w, f.h, b64decode(f.data), {off: f.off, shape: f.shape, gap: f.gap, glow: true, maxH: 300});
+    setOnline(true);
+  } catch (e) { setOnline(false); }
+  previewBusy = false;
+}
+function setOnline(on) { $('dot').classList.toggle('on', on); }
+
+// ---------------------------------------------------------------- state
+// Forms are filled from the device only on the first load, so polling never clobbers edits.
+async function loadState(initial) {
+  try {
+    state = await api('/api/state');
+    renderStatus();
+    if (initial) { syncDisplay(); syncScene(); }
+  } catch (e) { setOnline(false); }
+}
+function renderStatus() {
+  if (!state) return;
+  const s = state.scene, d = state.display;
+  let what = s.mode;
+  if (s.mode === 'text') what = `text “${(s.text || '').slice(0, 30)}”`;
+  if (s.mode === 'effect') what = `effect ${s.name}`;
+  if (s.mode === 'anim') what = `animation ${s.frames} frames @ ${s.fps} fps`;
+  if (s.mode === 'pixels') what = `image ${s.w}×${s.h}`;
+  $('status').innerHTML = '';
+  [['Showing', what], ['Matrix', `${d.width}×${d.height} ${d.color_mode}`], ['LED pitch', d.pitch + ' px']].forEach(([k, v]) => {
+    const span = document.createElement('span');
+    span.innerHTML = k + ': <b></b>';
+    span.querySelector('b').textContent = v;
+    $('status').appendChild(span);
+  });
+}
+function syncScene() {
+  const s = state.scene;
+  if (s.mode === 'text' && !s.notifying) {
+    $('tText').value = s.text; $('tColor').value = s.color; $('tBg').value = s.bg;
+    $('tSpeed').value = s.speed; $('tSpeedV').textContent = Math.round(s.speed) + ' px/s';
+    $('tScroll').value = s.scroll; $('tSize').value = s.size; $('tRainbow').checked = s.rainbow;
+  }
+  if (s.mode === 'effect') {
+    selectedFx = s.name;
+    $('eSpeed').value = s.speed; $('eSpeedV').textContent = s.speed;
+    $('eColor').value = s.color; $('eLevel').value = s.level; $('eLevelV').textContent = s.level + '%';
+    renderFx();
+  }
+}
+
+// ---------------------------------------------------------------- text
+$('tSpeed').oninput = () => ($('tSpeedV').textContent = $('tSpeed').value + ' px/s');
+function textBody() {
+  return {text: $('tText').value, color: $('tColor').value, bg: $('tBg').value, speed: +$('tSpeed').value,
+          scroll: $('tScroll').value, size: +$('tSize').value, rainbow: $('tRainbow').checked};
+}
+$('tShow').onclick = () => act('/api/text', textBody(), 'Text sent');
+$('tNotify').onclick = () => act('/api/notify', {text: $('tText').value, color: $('tColor').value, repeat: 1}, 'Notification sent');
+
+// ---------------------------------------------------------------- effects
+let selectedFx = null;
+async function loadEffects() {
+  try {
+    effects = (await api('/api/effects')).effects;
+    renderFx();
+  } catch (e) {}
+}
+function renderFx() {
+  const list = $('fxList');
+  list.innerHTML = '';
+  effects.forEach((e) => {
+    const b = document.createElement('button');
+    b.innerHTML = '<b></b><span></span>';
+    b.querySelector('b').textContent = e.name;
+    b.querySelector('span').textContent = e.description;
+    b.classList.toggle('on', e.name === selectedFx);
+    b.onclick = () => {
+      selectedFx = e.name;
+      if (!$('eUseColor').checked) $('eColor').value = e.default_color;
+      renderFx();
+      sendEffect();
+    };
+    list.appendChild(b);
+  });
+  $('liquidBox').classList.toggle('on', selectedFx === 'liquid');
+  if (info) $('imuHint').textContent = info.imu ? 'This board has an IMU: tilt and shake it for real. Dragging here overrides it for a while.' : 'No IMU on this board: drag to tilt, press Shake (or the BOOT button).';
+}
+function sendEffect() {
+  if (!selectedFx) return;
+  const body = {name: selectedFx, speed: +$('eSpeed').value, level: +$('eLevel').value};
+  if ($('eUseColor').checked) body.color = $('eColor').value;
+  act('/api/effect', body);
+}
+const sendEffectSoon = debounce(sendEffect, 250);
+$('eSpeed').oninput = () => { $('eSpeedV').textContent = $('eSpeed').value; sendEffectSoon(); };
+$('eLevel').oninput = () => { $('eLevelV').textContent = $('eLevel').value + '%'; sendEffectSoon(); };
+$('eColor').oninput = () => { $('eUseColor').checked = true; sendEffectSoon(); };
+$('eUseColor').onchange = sendEffect;
+$('shake').onclick = () => act('/api/motion', {shake: 1});
+$('tiltReset').onclick = () => { act('/api/motion', {tilt_x: 0, tilt_y: 1, hold_ms: 100}); placeKnob(0, 1); };
+
+const tilt = $('tilt');
+function placeKnob(gx, gy) {
+  const r = 64, k = tilt.querySelector('i');
+  const m = Math.hypot(gx, gy), f = m > 1 ? 1 / m : 1;
+  k.style.left = 64 + gx * f * r + 'px';
+  k.style.top = 64 + gy * f * r + 'px';
+}
+const sendTilt = debounce((gx, gy) => api('/api/motion', {tilt_x: gx, tilt_y: gy, hold_ms: 20000}).catch(() => {}), 60);
+function tiltFromEvent(ev) {
+  const rc = tilt.getBoundingClientRect();
+  let gx = (ev.clientX - rc.left - rc.width / 2) / (rc.width / 2);
+  let gy = (ev.clientY - rc.top - rc.height / 2) / (rc.height / 2);
+  const m = Math.hypot(gx, gy);
+  if (m > 1) { gx /= m; gy /= m; }
+  placeKnob(gx, gy);
+  sendTilt(+gx.toFixed(2), +gy.toFixed(2));
+}
+tilt.onpointerdown = (e) => { tilt.setPointerCapture(e.pointerId); tiltFromEvent(e); };
+tilt.onpointermove = (e) => { if (e.buttons) tiltFromEvent(e); };
+tilt.ondblclick = () => $('tiltReset').click();
+placeKnob(0, 1);
+
+// ---------------------------------------------------------------- draw editor
+const PALETTE = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#00c7be', '#0a84ff', '#5e5ce6', '#bf5af2', '#ff2d55', '#ffffff', '#8e8e93', '#000000'];
+let tool = 'pen', frames = [], cur = 0, ew = 32, eh = 16, playTimer = null;
+function blankFrame() { return new Uint8Array(ew * eh * 3); }
+function ensureFrames() {
+  const d = state?.display;
+  const w = d ? d.width : 32, h = d ? d.height : 16;
+  if (!frames.length || w !== ew || h !== eh) {
+    ew = w; eh = h;
+    frames = [blankFrame()];
+    cur = 0;
+  }
+}
+PALETTE.forEach((c) => {
+  const b = document.createElement('button');
+  b.style.background = c;
+  b.onclick = () => { $('dColor').value = c; markSwatch(); };
+  $('swatches').appendChild(b);
+});
+function markSwatch() { [...$('swatches').children].forEach((b, i) => b.classList.toggle('on', PALETTE[i] === $('dColor').value)); }
+$('dColor').oninput = markSwatch;
+document.querySelectorAll('#tools button').forEach((b) => (b.onclick = () => {
+  tool = b.dataset.tool;
+  document.querySelectorAll('#tools button').forEach((x) => x.classList.toggle('on', x === b));
+}));
+let editorPitch = 10;
+function drawEditor() {
+  ensureFrames();
+  editorPitch = drawLeds($('editor'), ew, eh, frames[cur], {off: '#1b1e26', shape: 'round', gap: 18, maxH: 420});
+  renderFrames();
+}
+function renderFrames() {
+  const box = $('frames');
+  box.innerHTML = '';
+  frames.forEach((f, i) => {
+    const c = document.createElement('canvas');
+    c.width = ew; c.height = eh;
+    const sc = Math.max(1, Math.floor(48 / eh));
+    c.style.width = ew * sc + 'px'; c.style.height = eh * sc + 'px';
+    c.style.imageRendering = 'pixelated';
+    const img = c.getContext('2d').createImageData(ew, eh);
+    for (let p = 0; p < ew * eh; p++) { img.data.set([f[p * 3], f[p * 3 + 1], f[p * 3 + 2], 255], p * 4); }
+    c.getContext('2d').putImageData(img, 0, 0);
+    c.classList.toggle('on', i === cur);
+    c.onclick = () => { cur = i; drawEditor(); };
+    box.appendChild(c);
+  });
+}
+let liveOps = [];
+const flushLive = debounce(() => {
+  if (!liveOps.length) return;
+  const ops = liveOps; liveOps = [];
+  api('/api/pixels', {set: ops}).catch((e) => toast(e.message, true));
+}, 40);
+function paint(x, y) {
+  const f = frames[cur], i = (y * ew + x) * 3;
+  if (tool === 'pick') {
+    $('dColor').value = rgb2hex(f[i], f[i + 1], f[i + 2]);
+    markSwatch();
+    return;
+  }
+  const rgb = tool === 'erase' ? [0, 0, 0] : hex2rgb($('dColor').value);
+  if (tool === 'fill') {
+    floodFill(f, x, y, rgb);
+    if ($('dLive').checked && frames.length === 1) sendFrames();
+  } else {
+    if (f[i] === rgb[0] && f[i + 1] === rgb[1] && f[i + 2] === rgb[2]) return;
+    f.set(rgb, i);
+    if ($('dLive').checked && frames.length === 1) { liveOps.push([x, y, rgb2hex(...rgb)]); flushLive(); }
+  }
+  drawEditor();
+}
+function floodFill(f, x0, y0, rgb) {
+  const i0 = (y0 * ew + x0) * 3, from = [f[i0], f[i0 + 1], f[i0 + 2]];
+  if (from.every((v, k) => v === rgb[k])) return;
+  const stack = [[x0, y0]];
+  while (stack.length) {
+    const [x, y] = stack.pop();
+    if (x < 0 || y < 0 || x >= ew || y >= eh) continue;
+    const i = (y * ew + x) * 3;
+    if (f[i] !== from[0] || f[i + 1] !== from[1] || f[i + 2] !== from[2]) continue;
+    f.set(rgb, i);
+    stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+  }
+}
+const ed = $('editor');
+function editorCell(ev) {
+  const rc = ed.getBoundingClientRect();
+  return [Math.floor((ev.clientX - rc.left) / (rc.width / ew)), Math.floor((ev.clientY - rc.top) / (rc.height / eh))];
+}
+let lastCell = '';
+ed.onpointerdown = (e) => { ed.setPointerCapture(e.pointerId); const [x, y] = editorCell(e); lastCell = x + ',' + y; paint(x, y); };
+ed.onpointermove = (e) => {
+  if (!e.buttons || tool === 'fill' || tool === 'pick') return;
+  const [x, y] = editorCell(e), k = x + ',' + y;
+  if (k === lastCell || x < 0 || y < 0 || x >= ew || y >= eh) return;
+  lastCell = k;
+  paint(x, y);
+};
+$('fAdd').onclick = () => { frames.splice(cur + 1, 0, frames[cur].slice()); cur++; drawEditor(); };
+$('fDel').onclick = () => { if (frames.length > 1) { frames.splice(cur, 1); cur = Math.max(0, cur - 1); drawEditor(); } };
+$('dClear').onclick = () => { frames[cur] = blankFrame(); drawEditor(); if ($('dLive').checked && frames.length === 1) sendFrames(); };
+$('fFps').oninput = () => ($('fFpsV').textContent = $('fFps').value);
+$('fPlay').onclick = () => {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; $('fPlay').textContent = 'Play preview'; return; }
+  $('fPlay').textContent = 'Stop preview';
+  playTimer = setInterval(() => { cur = (cur + 1) % frames.length; drawEditor(); }, 1000 / +$('fFps').value);
+};
+$('dGrab').onclick = async () => {
+  try {
+    const f = await api('/api/frame');
+    ensureFrames();
+    if (f.w !== ew || f.h !== eh) { ew = f.w; eh = f.h; frames = [blankFrame()]; cur = 0; }
+    frames[cur] = b64decode(f.data);
+    drawEditor();
+  } catch (e) { toast(e.message, true); }
+};
+async function sendFrames() {
+  if (frames.length === 1) return act('/api/pixels', {w: ew, h: eh, data: b64encode(frames[0])}, $('dLive').checked ? null : 'Image sent');
+  const frameBytes = ew * eh * 3;
+  const chunk = Math.max(1, Math.floor((info?.anim_chunk_bytes || 6144) / frameBytes));
+  const fps = +$('fFps').value;
+  for (let i = 0; i < frames.length; i += chunk) {
+    const part = frames.slice(i, i + chunk).map(b64encode);
+    const r = await act('/api/anim', {w: ew, h: eh, fps, loop: true, frames: part, append: i > 0});
+    if (!r) return;
+  }
+  toast(`Animation sent: ${frames.length} frames`);
+}
+$('dSend').onclick = sendFrames;
+
+// Image / GIF import: scaled to fit the matrix, centered.
+$('dFile').onchange = async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  ensureFrames();
+  const toFrame = (src, sw, sh) => {
+    const c = document.createElement('canvas');
+    c.width = ew; c.height = eh;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, ew, eh);
+    const k = Math.min(ew / sw, eh / sh), dw = Math.max(1, Math.round(sw * k)), dh = Math.max(1, Math.round(sh * k));
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, Math.floor((ew - dw) / 2), Math.floor((eh - dh) / 2), dw, dh);
+    const d = ctx.getImageData(0, 0, ew, eh).data, out = new Uint8Array(ew * eh * 3);
+    for (let p = 0; p < ew * eh; p++) {
+      const a = d[p * 4 + 3] / 255;
+      out[p * 3] = d[p * 4] * a; out[p * 3 + 1] = d[p * 4 + 1] * a; out[p * 3 + 2] = d[p * 4 + 2] * a;
+    }
+    return out;
+  };
+  try {
+    if (file.type === 'image/gif' && 'ImageDecoder' in window) {
+      const dec = new ImageDecoder({data: await file.arrayBuffer(), type: 'image/gif'});
+      await dec.tracks.ready;
+      const n = Math.min(dec.tracks.selectedTrack.frameCount, 120);
+      const out = [];
+      let dur = 0;
+      for (let i = 0; i < n; i++) {
+        const {image} = await dec.decode({frameIndex: i});
+        out.push(toFrame(image, image.displayWidth, image.displayHeight));
+        dur += (image.duration || 100000) / 1000;
+        image.close();
+      }
+      frames = out; cur = 0;
+      const fps = Math.max(1, Math.min(30, Math.round(1000 / (dur / n))));
+      $('fFps').value = fps; $('fFpsV').textContent = fps;
+      toast(`Imported ${n} frames`);
+    } else {
+      const bmp = await createImageBitmap(file);
+      frames[cur] = toFrame(bmp, bmp.width, bmp.height);
+    }
+    drawEditor();
+  } catch (e) { toast('Import failed: ' + e.message, true); }
+};
+
+// ---------------------------------------------------------------- display settings
+const MONO_PRESETS = {Red: '#ff2800', Amber: '#ffa000', Green: '#20ff40', Blue: '#2080ff', White: '#ffffff', Pink: '#ff40b0'};
+Object.entries(MONO_PRESETS).forEach(([name, c]) => {
+  const b = document.createElement('button');
+  b.style.background = c; b.title = name;
+  b.onclick = () => { $('cMono').value = c; sendDisplay({mono_color: c}); };
+  $('monoSwatches').appendChild(b);
+});
+function syncDisplay() {
+  const d = state.display;
+  $('cW').value = d.width; $('cH').value = d.height;
+  $('cFit').checked = d.fit;
+  $('cPitch').value = d.fit_pitch; $('cPitchV').textContent = d.fit_pitch + ' px';
+  $('cPreset').value = [...$('cPreset').options].some((o) => o.value === `${d.width}x${d.height}`) ? `${d.width}x${d.height}` : '';
+  seg('cMode', d.color_mode, (v) => sendDisplay({color_mode: v}));
+  seg('cShape', d.shape, (v) => sendDisplay({shape: v}));
+  $('monoRow').style.display = d.color_mode === 'rgb' ? 'none' : '';
+  $('cMono').value = d.mono_color;
+  $('cGap').value = d.gap; $('cGapV').textContent = d.gap + '%';
+  $('cBri').value = d.brightness; $('cBriV').textContent = d.brightness;
+  $('cOff').checked = d.show_off;
+  $('cBl').value = d.backlight; $('cBlV').textContent = d.backlight;
+  $('cRot').value = d.rotation;
+}
+async function sendDisplay(patch) {
+  const j = await act('/api/display', patch);
+  if (j && j.rebooting) toast('Rebooting to apply the rotation...');
+  if (j && (patch.width || patch.height || patch.fit !== undefined)) { frames = []; drawEditor(); }
+}
+const sendDisplaySoon = debounce(sendDisplay, 200);
+$('cPreset').onchange = () => { if (!$('cPreset').value) return; const [w, h] = $('cPreset').value.split('x').map(Number); sendDisplay({width: w, height: h}); };
+$('cW').onchange = $('cH').onchange = () => sendDisplay({width: +$('cW').value, height: +$('cH').value});
+$('cFit').onchange = () => sendDisplay($('cFit').checked ? {fit: true} : {width: +$('cW').value, height: +$('cH').value});
+$('cPitch').oninput = () => { $('cPitchV').textContent = $('cPitch').value + ' px'; sendDisplaySoon({fit: true, fit_pitch: +$('cPitch').value}); };
+$('cMono').oninput = () => sendDisplaySoon({mono_color: $('cMono').value});
+$('cGap').oninput = () => { $('cGapV').textContent = $('cGap').value + '%'; sendDisplaySoon({gap: +$('cGap').value}); };
+$('cBri').oninput = () => { $('cBriV').textContent = $('cBri').value; sendDisplaySoon({brightness: +$('cBri').value}); };
+$('cBl').oninput = () => { $('cBlV').textContent = $('cBl').value; sendDisplaySoon({backlight: +$('cBl').value}); };
+$('cOff').onchange = () => sendDisplay({show_off: $('cOff').checked});
+$('cRot').onchange = () => { if (confirm('Changing the rotation reboots the board. Continue?')) sendDisplay({rotation: +$('cRot').value}); else syncDisplay(); };
+
+// ---------------------------------------------------------------- device
+const TZ = [['Mexico City', 'CST6'], ['Monterrey', 'CST6'], ['Cancún', 'EST5'], ['Tijuana', 'PST8PDT,M3.2.0,M11.1.0'],
+  ['Madrid', 'CET-1CEST,M3.5.0,M10.5.0/3'], ['London', 'GMT0BST,M3.5.0/1,M10.5.0'], ['New York', 'EST5EDT,M3.2.0,M11.1.0'],
+  ['Chicago', 'CST6CDT,M3.2.0,M11.1.0'], ['Los Angeles', 'PST8PDT,M3.2.0,M11.1.0'], ['Bogotá', '<-05>5'], ['Buenos Aires', '<-03>3'],
+  ['São Paulo', '<-03>3'], ['Tokyo', 'JST-9'], ['UTC', 'UTC0']];
+TZ.forEach(([c, tz]) => { const o = document.createElement('option'); o.value = tz; o.textContent = c; $('sTzCity').appendChild(o); });
+$('sTzCity').onchange = () => ($('sTz').value = $('sTzCity').value);
+async function loadInfo() {
+  try {
+    info = await api('/api/info');
+    const rows = [['Board', info.board], ['Firmware', info.firmware], ['Hostname', info.hostname + '.local'], ['IP', info.ip],
+      ['WiFi', info.ssid ? `${info.ssid} (${info.rssi} dBm)` : (info.ap_mode ? 'setup AP' : '-')], ['Local time', info.local_time || 'not synced'],
+      ['Uptime', Math.floor(info.uptime_s / 60) + ' min'], ['Free heap', Math.round(info.heap_free / 1024) + ' KB'],
+      ['Free PSRAM', info.psram_free ? Math.round(info.psram_free / 1024) + ' KB' : '-'], ['IMU', info.imu ? 'yes' : 'no']];
+    if (info.battery_mv) rows.push(['Battery', `${info.battery_pct}% (${info.battery_mv} mV)`]);
+    $('info').innerHTML = '';
+    rows.forEach(([k, v]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td></td>';
+      tr.children[0].textContent = k; tr.children[1].textContent = v;
+      $('info').appendChild(tr);
+    });
+    $('hostLabel').textContent = info.hostname + '.local · ' + info.ip;
+    $('mcpHost').textContent = info.hostname + '.local';
+    if (document.activeElement !== $('sHost')) $('sHost').value = info.hostname;
+    if (document.activeElement !== $('sTz')) $('sTz').value = info.tz;
+    $('sTzCity').value = TZ.some(([, t]) => t === info.tz) ? info.tz : '';
+    renderFx();
+  } catch (e) {}
+}
+$('sSave').onclick = async () => {
+  const j = await act('/api/settings', {hostname: $('sHost').value.trim(), tz: $('sTz').value.trim()}, 'Settings saved');
+  if (j && j.rebooting) toast('Rebooting with the new hostname...');
+};
+$('wSave').onclick = async () => {
+  if (!$('wSsid').value) return toast('Enter a network name', true);
+  if (!confirm('Save WiFi and reboot?')) return;
+  try {
+    await fetch(BASE + '/api/wifi', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ssid: $('wSsid').value, pass: $('wPass').value})});
+    toast('Saved, rebooting...');
+  } catch (e) { toast(e.message, true); }
+};
+$('reboot').onclick = () => { if (confirm('Reboot the board?')) act('/api/reboot', {}, 'Rebooting...'); };
+
+// ---------------------------------------------------------------- boot
+loadInfo();
+loadEffects();
+loadState(true);
+setInterval(pollFrame, 180);
+setInterval(() => loadState(false), 4000);
+pollFrame();
+window.addEventListener('resize', debounce(() => { if ($('tab-draw').classList.contains('on')) drawEditor(); }, 150));
+</script>
+</body>
+</html>

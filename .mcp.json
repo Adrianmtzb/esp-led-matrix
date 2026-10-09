@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ledmatrix": {
+      "command": "node",
+      "args": ["mcp/server.mjs"],
+      "env": { "LEDMATRIX_HOSTS": "ledmatrix-c6.local,ledmatrix-s3.local" }
+    }
+  }
+}

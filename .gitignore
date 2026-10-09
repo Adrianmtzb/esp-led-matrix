@@ -1,0 +1,6 @@
+build/
+dist/
+_site/
+mcp/node_modules/
+shot-*.png
+.DS_Store

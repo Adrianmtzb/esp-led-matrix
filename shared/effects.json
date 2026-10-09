@@ -1,0 +1,16 @@
+{
+  "effects": [
+    { "name": "rainbow", "color": "#ff0000", "es": "Barrido diagonal de arcoíris", "en": "Diagonal rainbow wash" },
+    { "name": "plasma", "color": "#ff00ff", "es": "Plasma clásico de la demoscene", "en": "Classic demoscene plasma" },
+    { "name": "fire", "color": "#ff5000", "es": "Llamas que suben", "en": "Rising flames" },
+    { "name": "rain", "color": "#00ff46", "es": "Lluvia digital estilo Matrix", "en": "Digital rain, Matrix style" },
+    { "name": "life", "color": "#3cc8ff", "es": "Juego de la vida de Conway, se resiembra solo", "en": "Conway's Game of Life, reseeds itself" },
+    { "name": "twinkle", "color": "#ffffff", "es": "Píxeles que titilan al azar", "en": "Random twinkling pixels" },
+    { "name": "stars", "color": "#ffffff", "es": "Campo de estrellas con paralaje", "en": "Parallax starfield" },
+    { "name": "ripple", "color": "#00b4ff", "es": "Anillos que se expanden", "en": "Expanding rings" },
+    { "name": "bounce", "color": "#ffc800", "es": "Pelotas con física: inclina para rodarlas, agita para lanzarlas", "en": "Balls with physics: tilt to roll them, shake to kick" },
+    { "name": "clock", "color": "#78dcff", "es": "Reloj HH:MM sincronizado por NTP", "en": "HH:MM clock synced over NTP" },
+    { "name": "equalizer", "color": "#00ff00", "es": "Analizador de espectro de mentira", "en": "Fake spectrum analyzer" },
+    { "name": "liquid", "color": "#006eff", "es": "Líquido en un contenedor: inclina con el IMU, agita para que chispee", "en": "Liquid in a container: tilt with the IMU, shake for sparkles" }
+  ]
+}
